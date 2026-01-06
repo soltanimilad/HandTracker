@@ -1,0 +1,41 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+env/
+dist/
+build/
+*.egg-info/
+
+# --- Django ---
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+# Never commit your local settings with secrets
+local_settings.py
+
+# --- Environments & Secrets ---
+# Crucial: This file will hold your production passwords and API keys
+.env
+.env.prod
+
+# --- Docker ---
+# Ignore local data volumes if you mount them
+data/
+pgdata/
+
+# --- AI Models / MediaPipe ---
+# If your .task file is very large, ignore it and download on the server.
+# Otherwise, keep it if it's part of the repo.
+# hand_landmarker.task
+
+# --- System & IDE ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  fastapi_ai:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    ports:
+      - "8000:8000"
+
+  django_web:
+    build:
+      context: .
+      dockerfile: Dockerfile.django
+    ports:
+      - "8010:8010"
+    depends_on:
+      - fastapi_ai

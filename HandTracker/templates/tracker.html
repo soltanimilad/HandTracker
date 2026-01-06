@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Hand Scanner</title>
+    <style>
+        body { background: #0a0a0a; color: white; font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; }
+
+        /* 1. Viewport is now higher up in the flow */
+        .viewport {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            background: #000;
+        }
+        #display-img { max-width: 100%; max-height: 70vh; display: block; border-radius: 6px; }
+        #overlay-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+        /* Loading Bar Styles */
+        .progress-container { width: 80%; max-width: 600px; height: 12px; background: #222; border-radius: 6px; margin: 10px auto; overflow: hidden; border: 1px solid #333; }
+        #progress-fill { width: 0%; height: 100%; background: linear-gradient(90deg, #00d2ff, #3a7bd5); transition: width 0.4s ease; box-shadow: 0 0 10px #00d2ff; }
+
+        /* One-Time Glow Animation */
+        .finger-dot { fill: cyan; opacity: 0; }
+        .glow-trigger { animation: oneTimeGlow 0.8s ease-out forwards; }
+
+        @keyframes oneTimeGlow {
+            0% { r: 2; opacity: 0; }
+            50% { r: 20; opacity: 1; filter: drop-shadow(0 0 15px cyan) brightness(2); }
+            100% { r: 8; opacity: 1; filter: drop-shadow(0 0 5px cyan); }
+        }
+
+        .finger-label { fill: white; font-size: 16px; font-weight: bold; paint-order: stroke; stroke: black; stroke-width: 3px; opacity: 0; animation: fadeIn 0.5s forwards 0.3s; }
+        @keyframes fadeIn { to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <h1>Biometric Hand Scan</h1>
+    <input type="file" id="file-input" accept="image/*" style="margin-bottom: 20px;">
+
+    <div class="viewport">
+        <img id="display-img" src="" style="display:none;">
+        <svg id="overlay-svg"></svg>
+    </div>
+
+    <div class="progress-container">
+        <div id="progress-fill"></div>
+    </div>
+    <h3 id="status">Please upload a photo...</h3>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const statusText = document.getElementById('status');
+        const progressFill = document.getElementById('progress-fill');
+        const svg = document.getElementById('overlay-svg');
+        const img = document.getElementById('display-img');
+
+        fileInput.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            img.src = URL.createObjectURL(file);
+            img.style.display = 'block';
+            svg.innerHTML = '';
+            progressFill.style.width = "0%";
+            statusText.innerText = "Analyzing hand architecture...";
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/get-landmarks', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.hands && data.hands.length > 0) {
+                    svg.setAttribute("viewBox", `0 0 ${data.width} ${data.height}`);
+                    const fingers = data.hands[0];
+
+                    for (let i = 0; i < fingers.length; i++) {
+                        const f = fingers[i];
+
+                        // Create the Dot
+                        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                        circle.setAttribute("cx", f.x);
+                        circle.setAttribute("cy", f.y);
+                        circle.classList.add("finger-dot", "glow-trigger");
+
+                        // Create the Label
+                        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                        text.setAttribute("x", f.x + 15);
+                        text.setAttribute("y", f.y - 15);
+                        text.setAttribute("class", "finger-label");
+                        text.textContent = f.name;
+
+                        svg.appendChild(circle);
+                        svg.appendChild(text);
+
+                        progressFill.style.width = `${(i + 1) * 20}%`;
+                        statusText.innerText = `Verified: ${f.name}`;
+
+                        await new Promise(r => setTimeout(r, 700));
+                    }
+                    statusText.innerText = "Identity Confirmed. Access Granted.";
+                } else {
+                    statusText.innerText = "No hand detected. Please try again.";
+                }
+            } catch (err) {
+                statusText.innerText = "Error connecting to AI Server.";
+                console.error(err);
+            }
+        };
+    </script>
+</body>
+</html>
