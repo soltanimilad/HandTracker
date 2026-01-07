@@ -7,18 +7,40 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background: #050505; color: #fff; font-family: 'Outfit', sans-serif; overflow-x: hidden; }
+        body {
+            background: #050505;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 1rem;
+        }
 
+        /* --- RESPONSIVE VIEWPORT --- */
         .glass-viewport {
             background: rgba(20, 20, 20, 0.6);
             backdrop-filter: blur(15px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 0 40px rgba(79, 70, 229, 0.1);
             position: relative;
+            width: 100%;
+            /* Fluid aspect ratio: Video on desktop, more square on mobile */
+            aspect-ratio: 16 / 9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 0.5rem; }
+            .glass-viewport { aspect-ratio: 4 / 3; }
+            .finger-label { font-size: 10px !important; }
         }
 
         #overlay-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
 
+        /* --- SCANNING ANIMATIONS --- */
         .progress-bar-bg { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
         #progress-fill {
             width: 0%;
@@ -51,36 +73,49 @@
         @keyframes moveScan { from { top: 0%; } to { top: 100%; } }
     </style>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-6">
+<body class="flex flex-col items-center justify-center min-h-screen">
 
-    <div class="w-full max-w-4xl flex flex-col gap-6">
-        <div class="flex justify-between items-center px-4">
+    <div class="w-full max-w-4xl flex flex-col gap-4 md:gap-6">
+
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center px-2 gap-4">
             <div class="flex flex-col">
-                <h1 class="text-2xl font-bold tracking-tighter text-indigo-400">BIOMETRIC_SCAN_V2</h1>
-                <a href="/" class="text-[10px] text-slate-500 hover:text-indigo-300 transition-colors uppercase tracking-widest mt-1">← Return to Dashboard</a>
+                <h1 class="text-xl md:text-2xl font-bold tracking-tighter text-indigo-400 uppercase">Biometric_Scan_v2</h1>
+                <a href="/" class="text-[9px] md:text-[10px] text-slate-500 hover:text-indigo-300 transition-colors uppercase tracking-widest mt-1">← Return to Dashboard</a>
             </div>
-            <input type="file" id="file-input" accept="image/*" class="text-sm file:bg-indigo-600 file:hover:bg-indigo-500 file:border-none file:px-4 file:py-2 file:rounded-lg file:text-white file:cursor-pointer text-slate-400 transition-all">
+
+            <div class="w-full sm:w-auto">
+                <input type="file" id="file-input" accept="image/*"
+                    class="block w-full text-xs text-slate-400
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-xs file:font-semibold
+                    file:bg-indigo-600 file:text-white
+                    hover:file:bg-indigo-500 cursor-pointer">
+            </div>
         </div>
 
-        <div class="glass-viewport rounded-[32px] overflow-hidden aspect-video flex items-center justify-center">
+        <div class="glass-viewport rounded-2xl md:rounded-[32px]">
             <div id="scan-line" class="scan-line"></div>
             <img id="display-img" class="hidden w-full h-full object-contain">
             <svg id="overlay-svg"></svg>
-            <div id="init-msg" class="text-slate-500 font-mono text-sm uppercase tracking-[0.3em] animate-pulse">Waiting for Data Input...</div>
+            <div id="init-msg" class="text-slate-500 font-mono text-[10px] md:text-sm uppercase tracking-[0.3em] animate-pulse text-center px-4">
+                Waiting for Data Input...
+            </div>
         </div>
 
-        <div class="w-full px-2">
-            <div class="flex justify-between text-[10px] font-mono mb-2 text-slate-400 tracking-widest uppercase">
+        <div class="w-full px-1">
+            <div class="flex justify-between text-[9px] md:text-[10px] font-mono mb-2 text-slate-400 tracking-widest uppercase">
                 <span id="status">Status: Idle</span>
                 <span id="percent-text">0%</span>
             </div>
-            <div class="progress-bar-bg w-full h-4 rounded-full overflow-hidden relative">
+            <div class="progress-bar-bg w-full h-3 md:h-4 rounded-full overflow-hidden relative">
                 <div id="progress-fill" class="h-full"></div>
             </div>
         </div>
     </div>
 
     <script>
+        // ... (Script remains unchanged as it is already logically compatible with responsive CSS)
         const fileInput = document.getElementById('file-input');
         const statusText = document.getElementById('status');
         const percentText = document.getElementById('percent-text');
@@ -94,11 +129,8 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            // 1. DYNAMIC URL RESOLUTION
-            // This ensures the browser talks to the correct Docker Host IP
             const API_URL = `http://${window.location.hostname}:8008/get-landmarks`;
 
-            // Reset UI
             img.src = URL.createObjectURL(file);
             img.classList.remove('hidden');
             initMsg.classList.add('hidden');
@@ -111,31 +143,22 @@
             formData.append('file', file);
 
             try {
-                // Use the Dynamic API_URL instead of hardcoded 127.0.0.1
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: formData
-                });
-
+                const response = await fetch(API_URL, { method: 'POST', body: formData });
                 if (!response.ok) throw new Error("Server connection failed");
 
                 const data = await response.json();
 
                 if (data.hands && data.hands.length > 0) {
-                    // Set SVG coordinate system to match image dimensions
                     svg.setAttribute("viewBox", `0 0 ${data.width} ${data.height}`);
                     const fingers = data.hands[0];
 
                     for (let i = 0; i < fingers.length; i++) {
                         const f = fingers[i];
-
-                        // Create the HUD circle
                         const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                         circle.setAttribute("cx", f.x);
                         circle.setAttribute("cy", f.y);
                         circle.classList.add("finger-dot", "glow-trigger");
 
-                        // Create label
                         const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
                         text.setAttribute("x", f.x + 20);
                         text.setAttribute("y", f.y - 10);
@@ -145,12 +168,9 @@
                         svg.appendChild(circle);
                         svg.appendChild(text);
 
-                        // Smooth progress calculation
                         const percentage = Math.round(((i + 1) / fingers.length) * 100);
                         updateProgress(percentage);
                         statusText.innerText = `VERIFYING_${f.name.toUpperCase()}`;
-
-                        // Artificial delay for high-tech scanning effect
                         await new Promise(r => setTimeout(r, 400));
                     }
                     statusText.innerText = "ACCESS_GRANTED_IDENTITY_MATCHED";
