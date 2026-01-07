@@ -1,18 +1,24 @@
-version: '3.8'
-
 services:
-  fastapi_ai:
-    build:
-      context: .
-      dockerfile: Dockerfile.fastapi
-    ports:
-      - "8000:8000"
-
   django_web:
     build:
       context: .
       dockerfile: Dockerfile.django
     ports:
-      - "8010:8010"
+      - "8000:8000"
+    volumes:
+      - .:/app
     depends_on:
       - fastapi_ai
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  fastapi_ai:
+    build:
+      context: .
+      dockerfile: Dockerfile.fastapi
+    ports:
+      - "8008:8008"
+    volumes:
+      - .:/app
+    environment:
+      - PIP_DEFAULT_TIMEOUT=1000

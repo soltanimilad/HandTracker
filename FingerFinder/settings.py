@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-c^(@rs%p#1eduyl0t2g5tx##8oh_8^)w62**qumn+92p*jf64u
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -55,7 +55,8 @@ ROOT_URLCONF = 'FingerFinder.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        # ADD THIS: Tells Django to look in a global templates folder
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

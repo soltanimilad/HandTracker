@@ -39,7 +39,7 @@ app = FastAPI(lifespan=lifespan)
 # This allows your Django frontend to talk to this API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For production, replace "*" with your Django URL
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
